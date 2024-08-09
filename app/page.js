@@ -210,12 +210,12 @@ export default function Home() {
       <TextField
         label="Search Inventory"
         variant="outlined"
-        fullWidth
+        width="500px"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         style={{ marginBottom: '20px' }}
       />
-      <Box border={'1px solid #333'} width="800px">
+      <Box border={'1px solid #333'} width="1024px">
         <Box
           height="100px"
           bgcolor={'#ADD8E6'}
@@ -237,7 +237,7 @@ export default function Home() {
               justifyContent={'space-between'}
               alignItems={'center'}
               bgcolor={'#f0f0f0'}
-              paddingX={2}
+              paddingX={1}
             >
               <Typography variant={'h5'} color={'#333'} textAlign={'center'}>
                 {name.charAt(0).toUpperCase() + name.slice(1)}
