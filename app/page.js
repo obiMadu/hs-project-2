@@ -31,13 +31,14 @@ const style = {
 export default function Home() {
   const [inventory, setInventory] = useState([])
   const [open, setOpen] = useState(false)
-  const [editOpen, setEditOpen] = useState(false) // State to manage edit modal
+  const [editOpen, setEditOpen] = useState(false)
   const [itemName, setItemName] = useState('')
+  const [itemQuantity, setItemQuantity] = useState('') // Add state for quantity in add item modal
   const [editItemName, setEditItemName] = useState('')
   const [editItemQuantity, setEditItemQuantity] = useState('')
-  const [selectedItem, setSelectedItem] = useState(null) // State to track selected item for editing
-  const [searchQuery, setSearchQuery] = useState('') // State to track search query
-  const [filteredInventory, setFilteredInventory] = useState([]) // State for filtered items
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filteredInventory, setFilteredInventory] = useState([])
 
   const handleOpen = () => setOpen(true)
   const handleClose = () => setOpen(false)
@@ -50,7 +51,6 @@ export default function Home() {
   }
   const handleEditClose = () => setEditOpen(false)
 
-  // Function to update the inventory state
   const updateInventory = async () => {
     const snapshot = query(collection(firestore, 'inventory'))
     const docs = await getDocs(snapshot)
@@ -59,23 +59,23 @@ export default function Home() {
       inventoryList.push({ name: doc.id, ...doc.data() })
     })
     setInventory(inventoryList)
-    setFilteredInventory(inventoryList) // Initially, show all items
+    setFilteredInventory(inventoryList)
   }
 
-  const addItem = async (item) => {
-    const docRef = doc(collection(firestore, 'inventory'), item)
+  const addItem = async (name, quantity) => {
+    const docRef = doc(collection(firestore, 'inventory'), name)
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) {
-      const { quantity } = docSnap.data()
-      await setDoc(docRef, { quantity: quantity + 1 })
+      const { quantity: existingQuantity } = docSnap.data()
+      await setDoc(docRef, { quantity: existingQuantity + Number(quantity) })
     } else {
-      await setDoc(docRef, { quantity: 1 })
+      await setDoc(docRef, { quantity: Number(quantity) })
     }
     updateInventory()
   }
 
-  const removeItem = async (item) => {
-    const docRef = doc(collection(firestore, 'inventory'), item)
+  const removeItem = async (name) => {
+    const docRef = doc(collection(firestore, 'inventory'), name)
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) {
       const { quantity } = docSnap.data()
@@ -92,16 +92,14 @@ export default function Home() {
     const oldDocRef = doc(collection(firestore, 'inventory'), oldName)
     const newDocRef = doc(collection(firestore, 'inventory'), newName)
 
-    // If the item name is changed, we need to delete the old document and create a new one
     if (oldName !== newName) {
       const oldDocSnap = await getDoc(oldDocRef)
       if (oldDocSnap.exists()) {
-        await setDoc(newDocRef, { quantity: newQuantity })
+        await setDoc(newDocRef, { quantity: Number(newQuantity) })
         await deleteDoc(oldDocRef)
       }
     } else {
-      // If the item name is the same, just update the quantity
-      await setDoc(newDocRef, { quantity: newQuantity })
+      await setDoc(newDocRef, { quantity: Number(newQuantity) })
     }
     updateInventory()
     handleEditClose()
@@ -111,7 +109,6 @@ export default function Home() {
     updateInventory()
   }, [])
 
-  // Filter inventory based on search query
   useEffect(() => {
     setFilteredInventory(
       inventory.filter(item =>
@@ -140,20 +137,30 @@ export default function Home() {
           <Typography id="modal-modal-title" variant="h6" component="h2">
             Add Item
           </Typography>
-          <Stack width="100%" direction={'row'} spacing={2}>
+          <Stack width="100%" direction={'column'} spacing={2}>
             <TextField
               id="outlined-basic"
-              label="Item"
+              label="Item Name"
               variant="outlined"
               fullWidth
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
             />
+            <TextField
+              id="outlined-basic-quantity"
+              label="Quantity"
+              variant="outlined"
+              type="number"
+              fullWidth
+              value={itemQuantity}
+              onChange={(e) => setItemQuantity(e.target.value)}
+            />
             <Button
               variant="outlined"
               onClick={() => {
-                addItem(itemName)
+                addItem(itemName, itemQuantity)
                 setItemName('')
+                setItemQuantity('')
                 handleClose()
               }}
             >
