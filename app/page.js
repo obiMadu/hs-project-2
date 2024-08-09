@@ -32,6 +32,8 @@ export default function Home() {
   const [inventory, setInventory] = useState([])
   const [open, setOpen] = useState(false)
   const [itemName, setItemName] = useState('')
+  const [searchQuery, setSearchQuery] = useState('') // State to track search query
+  const [filteredInventory, setFilteredInventory] = useState([]) // State for filtered items
 
   const handleOpen = () => setOpen(true)
   const handleClose = () => setOpen(false)
@@ -45,6 +47,7 @@ export default function Home() {
       inventoryList.push({ name: doc.id, ...doc.data() })
     })
     setInventory(inventoryList)
+    setFilteredInventory(inventoryList) // Initially, show all items
   }
 
   const addItem = async (item) => {
@@ -76,6 +79,15 @@ export default function Home() {
   useEffect(() => {
     updateInventory()
   }, [])
+
+  // Filter inventory based on search query
+  useEffect(() => {
+    setFilteredInventory(
+      inventory.filter(item =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    )
+  }, [searchQuery, inventory])
 
   return (
     <Box
@@ -122,6 +134,14 @@ export default function Home() {
       <Button variant="contained" onClick={handleOpen}>
         Add New Item
       </Button>
+      <TextField
+        label="Search Inventory"
+        variant="outlined"
+        fullWidth
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        style={{ marginBottom: '20px' }}
+      />
       <Box border={'1px solid #333'}>
         <Box
           width="800px"
@@ -136,7 +156,7 @@ export default function Home() {
           </Typography>
         </Box>
         <Stack width="800px" height="300px" spacing={2} overflow={'auto'}>
-          {inventory.map(({ name, quantity }) => (
+          {filteredInventory.map(({ name, quantity }) => (
             <Box
               key={name}
               width="100%"
