@@ -31,12 +31,24 @@ const style = {
 export default function Home() {
   const [inventory, setInventory] = useState([])
   const [open, setOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false) // State to manage edit modal
   const [itemName, setItemName] = useState('')
+  const [editItemName, setEditItemName] = useState('')
+  const [editItemQuantity, setEditItemQuantity] = useState('')
+  const [selectedItem, setSelectedItem] = useState(null) // State to track selected item for editing
   const [searchQuery, setSearchQuery] = useState('') // State to track search query
   const [filteredInventory, setFilteredInventory] = useState([]) // State for filtered items
 
   const handleOpen = () => setOpen(true)
   const handleClose = () => setOpen(false)
+
+  const handleEditOpen = (item) => {
+    setSelectedItem(item)
+    setEditItemName(item.name)
+    setEditItemQuantity(item.quantity)
+    setEditOpen(true)
+  }
+  const handleEditClose = () => setEditOpen(false)
 
   // Function to update the inventory state
   const updateInventory = async () => {
@@ -74,6 +86,25 @@ export default function Home() {
       }
     }
     updateInventory()
+  }
+
+  const editItem = async (oldName, newName, newQuantity) => {
+    const oldDocRef = doc(collection(firestore, 'inventory'), oldName)
+    const newDocRef = doc(collection(firestore, 'inventory'), newName)
+
+    // If the item name is changed, we need to delete the old document and create a new one
+    if (oldName !== newName) {
+      const oldDocSnap = await getDoc(oldDocRef)
+      if (oldDocSnap.exists()) {
+        await setDoc(newDocRef, { quantity: newQuantity })
+        await deleteDoc(oldDocRef)
+      }
+    } else {
+      // If the item name is the same, just update the quantity
+      await setDoc(newDocRef, { quantity: newQuantity })
+    }
+    updateInventory()
+    handleEditClose()
   }
 
   useEffect(() => {
@@ -131,9 +162,51 @@ export default function Home() {
           </Stack>
         </Box>
       </Modal>
+
+      <Modal
+        open={editOpen}
+        onClose={handleEditClose}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box sx={style}>
+          <Typography id="modal-modal-title" variant="h6" component="h2">
+            Edit Item
+          </Typography>
+          <Stack width="100%" direction={'column'} spacing={2}>
+            <TextField
+              id="edit-item-name"
+              label="Item Name"
+              variant="outlined"
+              fullWidth
+              value={editItemName}
+              onChange={(e) => setEditItemName(e.target.value)}
+            />
+            <TextField
+              id="edit-item-quantity"
+              label="Quantity"
+              variant="outlined"
+              type="number"
+              fullWidth
+              value={editItemQuantity}
+              onChange={(e) => setEditItemQuantity(e.target.value)}
+            />
+            <Button
+              variant="outlined"
+              onClick={() => {
+                editItem(selectedItem.name, editItemName, editItemQuantity)
+              }}
+            >
+              Save Changes
+            </Button>
+          </Stack>
+        </Box>
+      </Modal>
+
       <Button variant="contained" onClick={handleOpen}>
         Add New Item
       </Button>
+
       <TextField
         label="Search Inventory"
         variant="outlined"
@@ -173,9 +246,14 @@ export default function Home() {
               <Typography variant={'h3'} color={'#333'} textAlign={'center'}>
                 Quantity: {quantity}
               </Typography>
-              <Button variant="contained" onClick={() => removeItem(name)}>
-                Remove
-              </Button>
+              <Stack direction="row" spacing={2}>
+                <Button variant="contained" onClick={() => handleEditOpen({ name, quantity })}>
+                  Edit
+                </Button>
+                <Button variant="contained" onClick={() => removeItem(name)}>
+                  Remove
+                </Button>
+              </Stack>
             </Box>
           ))}
         </Stack>
