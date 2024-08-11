@@ -267,3 +267,5 @@ export default function Home() {
     </Box>
   )
 }
+
+// Nothing
